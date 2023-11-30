@@ -1,0 +1,34 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Align JA→EN",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/align.py",
+      "args": [
+        "--from-language", "ja",
+        "--from-text", "瑞鳳です。軽空母ですが、練度が上がれば、正規空母並の活躍をお見せできます。",
+        "--to-text", "I'm Zuihou. Even though I'm a light carrier, I can show you that I'll be as good as standard carriers with some experience."
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Align EN→JA",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/align.py",
+      "args": [
+        "--from-language", "en",
+        "--from-text", "I'm Zuihou. Even though I'm a light carrier, I can show you that I'll be as good as standard carriers with some experience.",
+        "--to-text", "瑞鳳です。軽空母ですが、練度が上がれば、正規空母並の活躍をお見せできます。"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

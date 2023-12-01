@@ -76,9 +76,11 @@ svg {
     function render() {
       const fromText = fromTextInput.value;
       const toText = toTextInput.value;
-      const alignmentResult = parseAlignmentResult(alignmentResultInput.value);
+      const alignmentResult = mergeAlignments(parseAlignmentResult(alignmentResultInput.value), fromText, toText);
 
-      console.log('fromText =', fromText, ', toText =', toText, ', alignmentResult =', alignmentResult);
+      console.log('fromText =', fromText);
+      console.log('toText =', toText);
+      console.log('alignmentResult =', alignmentResult);
 
       outputEl.innerHTML = '';
 
@@ -93,13 +95,11 @@ svg {
       outputEl.appendChild(svg);
 
       const style = createSvgElement('style');
-      style.innerHTML = `
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap');
+      style.innerHTML = `@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap');
 text {
   font-family: 'Noto Sans JP', sans-serif;
   font-size: ${EM}px;
-}
-      `;
+}`;
       svg.appendChild(style);
 
       const fromTextEl = createTextElement(fromText, FROM_TEXT_ID, { x: 0, y: 0 });
@@ -110,8 +110,8 @@ text {
       centerHorizontally(fromTextEl, toTextEl);
 
       for (const { fromStart, fromEnd, toStart, toEnd } of alignmentResult) {
-        const from = fromText.substr(fromStart, fromEnd - fromStart);
-        const to = toText.substr(toStart, toEnd - toStart);
+        const from = fromText.substring(fromStart, fromEnd);
+        const to = toText.substring(toStart, toEnd);
 
         if (!/\p{L}/u.test(from) && !/\p{L}/u.test(to)) {
           console.log(`Skipping alignment of punctuation/symbol: ${from} (${fromStart}) => ${to} (${toStart})`);
@@ -149,7 +149,43 @@ text {
           toEnd: numbers[i + 3],
         });
       }
-      console.log('alignment result =', result);
+      return result;
+    }
+
+    function mergeAlignments(result, fromText, toText) {
+      const removed = new Set();
+      let modifiedList;
+      do {
+        modifiedList = false;
+        for (let cur of result) {
+          // Merge adjacent 'from' tokens (allowing a space in between) that point to the same 'to' range
+          for (let prev of result.filter(prev =>
+            !removed.has(prev) &&
+            (prev.fromEnd == cur.fromStart || (prev.fromEnd + 1 == cur.fromStart && !/\S/.test(fromText[prev.fromEnd]))) &&
+            prev.toStart == cur.toStart &&
+            prev.toEnd == cur.toEnd
+            )) {
+            console.log(`Merging ${fromText.substring(prev.fromStart, prev.fromEnd)} (${prev.fromStart}) => ${toText.substring(prev.toStart, prev.toEnd)} (${prev.toStart}) with ${fromText.substring(cur.fromStart, cur.fromEnd)} (${cur.fromStart}) => ${toText.substring(cur.toStart, cur.toEnd)} (${cur.toStart})`);
+            cur.fromStart = prev.fromStart;
+            removed.add(prev);
+            modifiedList = true;
+          }
+
+          // Merge adjacent 'to' tokens (allowing a space in between) that point to the same 'from' range
+          for (let prev of result.filter(prev =>
+            !removed.has(prev) &&
+            (prev.toEnd == cur.toStart || (prev.toEnd + 1 == cur.toStart && !/\S/.test(toText[prev.toEnd]))) &&
+            prev.fromStart == cur.fromStart &&
+            prev.fromEnd == cur.fromEnd
+            )) {
+            console.log(`Merging ${fromText.substring(prev.fromStart, prev.fromEnd)} (${prev.fromStart}) => ${toText.substring(prev.toStart, prev.toEnd)} (${prev.toStart}) with ${fromText.substring(cur.fromStart, cur.fromEnd)} (${cur.fromStart}) => ${toText.substring(cur.toStart, cur.toEnd)} (${cur.toStart})`);
+            cur.toStart = prev.toStart;
+            removed.add(prev);
+            modifiedList = true;
+          }
+        }
+        result = result.filter(x => !removed.has(x));
+      } while (modifiedList);
       return result;
     }
 

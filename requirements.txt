@@ -3,3 +3,6 @@
 spacy[ja]==3.7.2
 torch==2.1.1+cpu
 transformers==4.35.2
+
+# awesome-align
+boto3

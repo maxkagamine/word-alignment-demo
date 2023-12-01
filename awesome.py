@@ -17,11 +17,13 @@ def build_input(from_text: str, from_token_ranges: list[tuple[int, int]], to_tex
   to_tokenized = build_tokenized_string(to_text, to_token_ranges)
   return f'{from_tokenized} ||| {to_tokenized}'
 
-def run_awesome():
+def run_awesome(model: str):
+  if '/' in model and not model.startswith('/'):
+    model = '../' + model
   ret = call([
     'python3', '-m', 'awesome_align.run_align',
     '--output_file', '../' + OUTPUT_FILE,
-    '--model_name_or_path', 'bert-base-multilingual-cased',
+    '--model_name_or_path', model,
     '--data_file', '../' + INPUT_FILE
   ], cwd='./awesome-align')
   if ret != 0:
@@ -47,6 +49,7 @@ if __name__ == '__main__':
   parser.add_argument('--from-text', type=str, required=True)
   parser.add_argument('--to-language', type=str, required=True, choices=TOKENIZERS.keys())
   parser.add_argument('--to-text', type=str, required=True)
+  parser.add_argument('--model', type=str, default='bert-base-multilingual-cased')
   args = parser.parse_args()
 
   from_token_ranges = get_token_ranges(args.from_language, args.from_text)
@@ -56,7 +59,7 @@ if __name__ == '__main__':
   with open(INPUT_FILE, 'w') as file:
     print(input_str, file=file)
 
-  run_awesome()
+  run_awesome(args.model)
 
   result: list[int] = []
   with open(OUTPUT_FILE, 'r') as file:

@@ -14,21 +14,31 @@ body.dark {
   color-scheme: dark;
 }
 #form {
-  margin-bottom: 2em;
+  margin: 0 0 2em;
+  padding: 0;
+  border: none;
+  min-width: 700px;
 }
-label, select {
+label, select, button {
   display: inline-block;
   margin: 0.5em;
 }
 input:not([type="checkbox"]) {
   width: 500px;
+}
+input, select, button {
   font-size: inherit;
 }
-select {
-  font-size: inherit;
+#swapButton {
+  position: relative;
+  top: 1.25em;
+  margin-left: 0;
 }
 svg {
   width: 100%;
+}
+.loading {
+  opacity: 0;
 }
 #download {
   display: inline-block;
@@ -38,22 +48,28 @@ svg {
 </head>
 <body>
 
-  <div id="form">
-    <div><label>From text: <input id="fromTextInput" value="瑞鳳です。軽空母ですが、練度が上がれば、正規空母並の活躍をお見せできます。" /></label></div>
+  <fieldset id="form">
+    <div>
+      <label>From text: <input id="fromTextInput" value="瑞鳳です。軽空母ですが、練度が上がれば、正規空母並の活躍をお見せできます。" /></label>
+      <button id="swapButton">⤪</button>
+    </div>
     <div><label>To text: <input id="toTextInput" value="I'm Zuihou. Even though I'm a light carrier, I can show you that I'll be as good as standard carriers with some experience." /></label></div>
     <div><label>Alignment result: <input id="alignmentResultInput" value="0,2,4,10,2,4,0,3,4,5,10,11,5,6,30,35,6,8,36,43,8,10,25,27,10,11,12,23,11,12,43,44,15,18,73,80,18,19,70,72,20,22,84,92,22,24,93,101,25,26,73,83,26,28,112,122,29,30,102,106,30,32,51,59,32,34,47,50,34,36,47,50,36,37,122,123" /></label></div>
     <div>
+      <button id="alignWspButton">Align (WSP)</button>
+      <button id="alignAwesomeButton">Align (Awesome)</button>
+
       <label><input id="darkMode" type="checkbox" checked /> Dark mode</label>
       <select id="paletteDropdown">
         <option value="material" selected>Material</option>
         <option value="one">One Light/Dark</option>
       </select>
     </div>
-  </div>
+  </fieldset>
 
   <div id="output"></div>
 
-  <a id="download" href="#" hidden>Download</a>
+  <a id="download" href="#" hidden>Download SVG</a>
 
   <script>
     const EM = 30;
@@ -67,6 +83,7 @@ svg {
     const FROM_TEXT_ID = 'fromText';
     const TO_TEXT_ID = 'toText';
 
+    const form = document.getElementById('form');
     const fromTextInput = document.getElementById('fromTextInput');
     const toTextInput = document.getElementById('toTextInput');
     const alignmentResultInput = document.getElementById('alignmentResultInput');
@@ -74,6 +91,9 @@ svg {
     const paletteDropdown = document.getElementById('paletteDropdown');
     const outputEl = document.getElementById('output');
     const dlLink = document.getElementById('download');
+    const alignWspButton = document.getElementById('alignWspButton');
+    const alignAwesomeButton = document.getElementById('alignAwesomeButton');
+    const swapButton = document.getElementById('swapButton');
 
     fromTextInput.addEventListener('input', render);
     toTextInput.addEventListener('input', render);
@@ -87,6 +107,47 @@ svg {
       const blob = new Blob([createDownloadableSvg(svg)], { type: 'text/svg' });
       dlLink.href = URL.createObjectURL(blob);
     });
+
+    alignWspButton.addEventListener('click', () => align('wsp'));
+    alignAwesomeButton.addEventListener('click', () => align('awesome'));
+
+    swapButton.addEventListener('click', () => {
+      const fromText = fromTextInput.value;
+      fromTextInput.value = toTextInput.value;
+      toTextInput.value = fromText;
+    });
+
+    form.addEventListener('submit', e => e.preventDefault());
+
+    async function align(method) {
+      form.disabled = true;
+      alignmentResultInput.value = 'IMA FIRIN MAH LAZER!!!';
+      try {
+        const res = await fetch('/align', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          cache: 'no-cache',
+          body: JSON.stringify({
+            method,
+            fromLanguage: isJapanese(fromTextInput.value) ? 'ja' : 'en',
+            fromText: fromTextInput.value,
+            toLanguage: isJapanese(toTextInput.value) ? 'ja' : 'en',
+            toText: toTextInput.value,
+          })
+        });
+        const json = await res.json();
+
+        alignmentResultInput.value = json.result;
+        form.disabled = false;
+
+        render();
+      } catch {
+        alignmentResultInput.value = 'ERROR';
+        form.disabled = false;
+      }
+    }
 
     function render() {
       document.body.classList.toggle('dark', darkMode.checked);
@@ -103,6 +164,7 @@ svg {
       console.log('alignmentResult =', alignmentResult);
 
       outputEl.innerHTML = '';
+      outputEl.classList.add('loading');
 
       if (!fromText || !toText || !alignmentResult.length) {
         return;
@@ -143,6 +205,8 @@ text {
       setTimeout(() => setViewBox(svg), 10); // Hack
       setTimeout(() => setViewBox(svg), 100); // Hack
       setTimeout(() => setViewBox(svg), 1000); // Hackity hack
+
+      outputEl.classList.remove('loading');
 
       let filename = /[一-龠ぁ-ゔァ-ヴー]/.test(fromText) ? toText : fromText;
       filename = filename.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -367,6 +431,10 @@ text {
       //   text.innerHTML = text.textContent;
       // }
       return '<?xml version="1.0" standalone="yes"?>\n' + svg.outerHTML;
+    }
+
+    function isJapanese(text) {
+      return /[一-龠ぁ-ゔァ-ヴー]/.test(text);
     }
 
     function createPalette(name, dark) {

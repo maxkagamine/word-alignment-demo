@@ -5,4 +5,7 @@ torch==2.1.1+cpu
 transformers==4.35.2
 
 # awesome-align
-boto3
+boto3==1.33.5
+
+# visualize.py
+Flask==3.0.0

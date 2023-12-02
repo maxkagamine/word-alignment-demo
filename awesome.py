@@ -42,32 +42,40 @@ def parse_output(output: str, from_text: str, from_token_ranges: list[tuple[int,
   assert len(result) % 4 == 0
   return result
 
+def align(from_language: str, from_text: str, to_language: str, to_text: str, model: str = 'bert-base-multilingual-cased'):
+  with NamedTemporaryFile(mode='+w', prefix='awesome-', suffix='.tmp', dir='.') as input_file, \
+       NamedTemporaryFile(mode='+w', prefix='awesome-', suffix='.tmp', dir='.') as output_file:
+
+    from_token_ranges = get_token_ranges(from_language, from_text)
+    to_token_ranges = get_token_ranges(to_language, to_text)
+
+    input_str = build_input(from_text, from_token_ranges, to_text, to_token_ranges)
+    print(input_str, file=input_file, flush=True)
+
+    run_awesome(model, input_file.name, output_file.name)
+
+    return parse_output(
+      output_file.readline(),
+      from_text,
+      from_token_ranges,
+      to_text,
+      to_token_ranges)
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('--from-language', type=str, required=True, choices=TOKENIZERS.keys())
   parser.add_argument('--from-text', type=str, required=True)
   parser.add_argument('--to-language', type=str, required=True, choices=TOKENIZERS.keys())
   parser.add_argument('--to-text', type=str, required=True)
-  parser.add_argument('--model', type=str, default='bert-base-multilingual-cased')
+  parser.add_argument('--model', type=str, default=None)
   args = parser.parse_args()
 
-  with NamedTemporaryFile(mode='+w', prefix='awesome-', suffix='.tmp', dir='.') as input_file, \
-       NamedTemporaryFile(mode='+w', prefix='awesome-', suffix='.tmp', dir='.') as output_file:
+  result = align(
+    args.from_language,
+    args.from_text,
+    args.to_language,
+    args.to_text,
+    args.model)
 
-    from_token_ranges = get_token_ranges(args.from_language, args.from_text)
-    to_token_ranges = get_token_ranges(args.to_language, args.to_text)
-
-    input_str = build_input(args.from_text, from_token_ranges, args.to_text, to_token_ranges)
-    print(input_str, file=input_file, flush=True)
-
-    run_awesome(args.model, input_file.name, output_file.name)
-
-    result = parse_output(
-      output_file.readline(),
-      args.from_text,
-      from_token_ranges,
-      args.to_text,
-      to_token_ranges)
-
-    print(','.join(str(i) for i in result))
+  print(','.join(str(i) for i in result))
 

@@ -17,11 +17,16 @@ body.dark {
   margin: 0 0 2em;
   padding: 0;
   border: none;
-  min-width: 700px;
+  text-wrap: nowrap;
 }
 label, select, button {
   display: inline-block;
   margin: 0.5em;
+}
+button select {
+  margin: 0;
+  font-size: 0.7em;
+  vertical-align: text-bottom;
 }
 input:not([type="checkbox"]) {
   width: 500px;
@@ -57,8 +62,14 @@ svg {
     <div><label>Alignment result: <input id="alignmentResultInput" value="0,2,4,10,2,4,0,3,4,5,10,11,5,6,30,35,6,8,36,43,8,10,25,27,10,11,12,23,11,12,43,44,15,18,73,80,18,19,70,72,20,22,84,92,22,24,93,101,25,26,73,83,26,28,112,122,29,30,102,106,30,32,51,59,32,34,47,50,34,36,47,50,36,37,122,123" /></label></div>
     <div>
       <button id="alignWspButton">Align (WSP)</button>
-      <button id="alignAwesomeButton">Align (Awesome)</button>
-
+      <button id="alignAwesomeButton">
+        Align (Awesome)
+        <select id="alignAwesomeModelDropdown">
+          <option value="bert-base-multilingual-cased">bert base</option>
+          <option value="./models/model_with_co">model w/ co</option>
+          <option value="./models/model_without_co" selected>model w/o co</option>
+        </select>
+      </button>
       <label><input id="darkMode" type="checkbox" checked /> Dark mode</label>
       <select id="paletteDropdown">
         <option value="material" selected>Material</option>
@@ -93,6 +104,7 @@ svg {
     const dlLink = document.getElementById('download');
     const alignWspButton = document.getElementById('alignWspButton');
     const alignAwesomeButton = document.getElementById('alignAwesomeButton');
+    const alignAwesomeModelDropdown = document.getElementById('alignAwesomeModelDropdown');
     const swapButton = document.getElementById('swapButton');
 
     fromTextInput.addEventListener('input', render);
@@ -109,7 +121,9 @@ svg {
     });
 
     alignWspButton.addEventListener('click', () => align('wsp'));
-    alignAwesomeButton.addEventListener('click', () => align('awesome'));
+    alignAwesomeButton.addEventListener('click', () => align('awesome', alignAwesomeModelDropdown.value));
+
+    alignAwesomeModelDropdown.addEventListener('click', e => e.stopPropagation());
 
     swapButton.addEventListener('click', () => {
       const fromText = fromTextInput.value;
@@ -119,7 +133,7 @@ svg {
 
     form.addEventListener('submit', e => e.preventDefault());
 
-    async function align(method) {
+    async function align(method, model) {
       form.disabled = true;
       alignmentResultInput.value = 'IMA FIRIN MAH LAZER!!!';
       try {
@@ -131,6 +145,7 @@ svg {
           cache: 'no-cache',
           body: JSON.stringify({
             method,
+            model,
             fromLanguage: isJapanese(fromTextInput.value) ? 'ja' : 'en',
             fromText: fromTextInput.value,
             toLanguage: isJapanese(toTextInput.value) ? 'ja' : 'en',

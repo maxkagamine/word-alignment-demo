@@ -19,10 +19,11 @@ def align():
   from_text = request.json.get('fromText')
   to_language = request.json.get('toLanguage')
   to_text = request.json.get('toText')
+  model = request.json.get('model')
 
   match method:
     case 'awesome':
-      result = awesome_align(from_language, from_text, to_language, to_text)
+      result = awesome_align(from_language, from_text, to_language, to_text, model)
     case _:
       result = wsp_align(from_language, from_text, to_text)
 

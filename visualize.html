@@ -309,10 +309,12 @@ text {
       return (LINE_SPACING / totalTextSpacing) * Math.abs(x1 - x2) * (x1 > x2 ? -1 : 1);
     }
 
+    /** @param {SVGElement} svg */
     function drawAlignment(svg, fromStart, fromEnd, toStart, toEnd, color) {
       const fromRect = getCharacterRangeRect(svg, FROM_TEXT_ID, fromStart, fromEnd);
       const toRect = getCharacterRangeRect(svg, TO_TEXT_ID, toStart, toEnd);
 
+      // Draw line
       let x1 = fromRect.left + (fromRect.width / 2);
       let x2 = toRect.left + (toRect.width / 2);
       let xOffset = calculateXOffset(x1, x2);
@@ -329,12 +331,31 @@ text {
 
       svg.appendChild(line);
 
+      // Set text color
       for (let i = fromStart; i < fromEnd; i++) {
         svg.getElementById(FROM_TEXT_ID + i).setAttribute('fill', color);
       }
+
       for (let i = toStart; i < toEnd; i++) {
         svg.getElementById(TO_TEXT_ID + i).setAttribute('fill', color);
       }
+
+      // Draw highlight rectangles under text
+      const drawHighlight = (rect, offsetTop, offsetBottom) => {
+        const highlight = createSvgElement('rect');
+        highlight.setAttribute('x', rect.left);
+        highlight.setAttribute('y', rect.top + offsetTop);
+        highlight.setAttribute('width', rect.width);
+        highlight.setAttribute('height', rect.height - offsetTop - offsetBottom);
+        // rectEl.setAttribute('rx', '5');
+        highlight.setAttribute('fill', color);
+        highlight.setAttribute('opacity', darkMode.checked ? '0.08' : '0.14');
+
+        svg.insertBefore(highlight, svg.querySelector('text'));
+      };
+
+      drawHighlight(fromRect, 0, 0.1 * EM);
+      drawHighlight(toRect, 0.1 * EM, 0);
     }
 
     function createDownloadableSvg(svg) {

@@ -1,5 +1,4 @@
-awesome-align-input.txt
-awesome-align-output.txt
+*.tmp
 /models
 
 # Byte-compiled / optimized / DLL files

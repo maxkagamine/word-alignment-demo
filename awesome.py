@@ -3,11 +3,10 @@
 Runs awesome-align with the same tokenization and output format as align.py
 '''
 import argparse
+import os
 from align import get_token_ranges, print_alignment, TOKENIZERS
 from subprocess import call
-
-INPUT_FILE = 'awesome-align-input.txt'
-OUTPUT_FILE = 'awesome-align-output.txt'
+from tempfile import NamedTemporaryFile
 
 def build_tokenized_string(text: str, token_ranges: list[tuple[int, int]]):
   return ' '.join(text[t[0]:t[1]] for t in token_ranges)
@@ -17,14 +16,14 @@ def build_input(from_text: str, from_token_ranges: list[tuple[int, int]], to_tex
   to_tokenized = build_tokenized_string(to_text, to_token_ranges)
   return f'{from_tokenized} ||| {to_tokenized}'
 
-def run_awesome(model: str):
+def run_awesome(model: str, input_file_path: str, output_file_path: str):
   if '/' in model and not model.startswith('/'):
     model = '../' + model
   ret = call([
     'python3', '-m', 'awesome_align.run_align',
-    '--output_file', '../' + OUTPUT_FILE,
+    '--output_file', os.path.join('..', output_file_path),
     '--model_name_or_path', model,
-    '--data_file', '../' + INPUT_FILE
+    '--data_file', os.path.join('..', input_file_path)
   ], cwd='./awesome-align')
   if ret != 0:
     raise ValueError('awesome-align failed')
@@ -52,18 +51,23 @@ if __name__ == '__main__':
   parser.add_argument('--model', type=str, default='bert-base-multilingual-cased')
   args = parser.parse_args()
 
-  from_token_ranges = get_token_ranges(args.from_language, args.from_text)
-  to_token_ranges = get_token_ranges(args.to_language, args.to_text)
+  with NamedTemporaryFile(mode='+w', prefix='awesome-', suffix='.tmp', dir='.') as input_file, \
+       NamedTemporaryFile(mode='+w', prefix='awesome-', suffix='.tmp', dir='.') as output_file:
 
-  input_str = build_input(args.from_text, from_token_ranges, args.to_text, to_token_ranges)
-  with open(INPUT_FILE, 'w') as file:
-    print(input_str, file=file)
+    from_token_ranges = get_token_ranges(args.from_language, args.from_text)
+    to_token_ranges = get_token_ranges(args.to_language, args.to_text)
 
-  run_awesome(args.model)
+    input_str = build_input(args.from_text, from_token_ranges, args.to_text, to_token_ranges)
+    print(input_str, file=input_file, flush=True)
 
-  result: list[int] = []
-  with open(OUTPUT_FILE, 'r') as file:
-    result = parse_output(file.readline(), args.from_text, from_token_ranges, args.to_text, to_token_ranges)
+    run_awesome(args.model, input_file.name, output_file.name)
 
-  print(','.join(str(i) for i in result))
+    result = parse_output(
+      output_file.readline(),
+      args.from_text,
+      from_token_ranges,
+      args.to_text,
+      to_token_ranges)
+
+    print(','.join(str(i) for i in result))
 

@@ -29,6 +29,20 @@
       ],
       "console": "integratedTerminal",
       "justMyCode": true
+    },
+    {
+      "name": "Awesome",
+      "type": "python",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/awesome-align",
+      "module": "awesome_align.run_align",
+      "args": [
+        "--model_name_or_path", "../models/model_without_co",
+        "--output_file", "../awesome-output.tmp",
+        "--data_file", "../awesome-input.tmp"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": true
     }
   ]
 }

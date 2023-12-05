@@ -87,21 +87,34 @@ def align_reverse(from_text: str, to_language: str, to_text: str, threshold: flo
     reversed_result += [result[i + 2], result[i + 3], result[i], result[i + 1]]
   return reversed_result
 
+def dedupe(result: list[int]) -> list[int]:
+  '''Filters out duplicate alignment results.'''
+  deduped = []
+  for i in range(0, len(result), 4):
+    is_dupe = False
+    for j in range(0, len(deduped), 4):
+      if result[i:i+4] == deduped[j:j+4]:
+        is_dupe = True
+    if not is_dupe:
+      deduped += result[i:i+4]
+  return deduped
+
 def align(
   from_language: str,
   from_text: str,
   to_language: str,
   to_text: str,
   threshold: float = DEFAULT_THRESHOLD,
-  include_reverse: bool = False) -> list[int]:
+  symmetric: bool = False) -> list[int]:
   '''
   Returns an flat array of `from_start`, `from_end`, `to_start`, and `to_end`,
   repeated for every token in `from_text` that aligns to a part of `to_text`,
-  and vice versa if `include_reverse` is true.
+  and vice versa if `symmetric` is true.
   '''
   result = align_forward(from_language, from_text, to_text, threshold)
-  if include_reverse:
+  if symmetric:
     result += align_reverse(from_text, to_language, to_text, threshold)
+    result = dedupe(result)
   return result
 
 if __name__ == '__main__':
@@ -111,7 +124,7 @@ if __name__ == '__main__':
   parser.add_argument('--to-language', type=str, required=True, choices=TOKENIZERS.keys())
   parser.add_argument('--to-text', type=str, required=True)
   parser.add_argument('--threshold', type=float, default=DEFAULT_THRESHOLD)
-  parser.add_argument('--include-reverse', action='store_true', default=False)
+  parser.add_argument('--symmetric', action='store_true', default=False)
   args = parser.parse_args()
 
   result = align(
@@ -120,6 +133,6 @@ if __name__ == '__main__':
     args.to_language,
     args.to_text,
     args.threshold,
-    args.include_reverse)
+    args.symmetric)
 
   print(','.join(str(i) for i in result))

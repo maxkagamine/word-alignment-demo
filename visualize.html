@@ -71,7 +71,7 @@ svg {
       <fieldset>
         <legend>WSP</legend>
         <label>Threshold: <input id="wspThresholdInput" type="number" value="0.1" min="0" max="1" step="0.1" /></label>
-        <label><input id="wspIncludeReverseCheckbox" type="checkbox" /> Include reverse</label>
+        <label><input id="wspSymmetricCheckbox" type="checkbox" /> <abbr title="Combines the results of reverse alignment.">Symmetric</abbr></label>
         <button id="alignWspButton">Align</button>
       </fieldset>
       <fieldset>
@@ -125,7 +125,7 @@ svg {
     const alignAwesomeButton = document.getElementById('alignAwesomeButton');
     const awesomeModelDropdown = document.getElementById('awesomeModelDropdown');
     const wspThresholdInput = document.getElementById('wspThresholdInput');
-    const wspIncludeReverseCheckbox = document.getElementById('wspIncludeReverseCheckbox');
+    const wspSymmetricCheckbox = document.getElementById('wspSymmetricCheckbox');
     const swapButton = document.getElementById('swapButton');
 
     fromTextInput.addEventListener('input', render);
@@ -170,7 +170,7 @@ svg {
             toText: toTextInput.value,
             awesomeModel: awesomeModelDropdown.value,
             wspThreshold: wspThresholdInput.value,
-            wspIncludeReverse: wspIncludeReverseCheckbox.checked,
+            wspSymmetric: wspSymmetricCheckbox.checked,
           })
         });
         const json = await res.json();

@@ -21,7 +21,7 @@ def align():
   to_text = request.json.get('toText')
   awesome_model = request.json.get('awesomeModel')
   wsp_threshold = float(request.json.get('wspThreshold'))
-  wsp_include_reverse = bool(request.json.get('wspIncludeReverse'))
+  wsp_symmetric = bool(request.json.get('wspSymmetric'))
 
   match method:
     case 'awesome':
@@ -33,7 +33,7 @@ def align():
         to_language,
         to_text,
         wsp_threshold,
-        wsp_include_reverse)
+        wsp_symmetric)
 
   return {
     'result': ','.join(str(i) for i in result)

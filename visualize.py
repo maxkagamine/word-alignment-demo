@@ -19,13 +19,21 @@ def align():
   from_text = request.json.get('fromText')
   to_language = request.json.get('toLanguage')
   to_text = request.json.get('toText')
-  model = request.json.get('model')
+  awesome_model = request.json.get('awesomeModel')
+  wsp_threshold = float(request.json.get('wspThreshold'))
+  wsp_include_reverse = bool(request.json.get('wspIncludeReverse'))
 
   match method:
     case 'awesome':
-      result = awesome_align(from_language, from_text, to_language, to_text, model)
+      result = awesome_align(from_language, from_text, to_language, to_text, awesome_model)
     case _:
-      result = wsp_align(from_language, from_text, to_text)
+      result = wsp_align(
+        from_language,
+        from_text,
+        to_language,
+        to_text,
+        wsp_threshold,
+        wsp_include_reverse)
 
   return {
     'result': ','.join(str(i) for i in result)

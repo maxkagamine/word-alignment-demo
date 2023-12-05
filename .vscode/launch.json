@@ -12,6 +12,7 @@
       "args": [
         "--from-language", "ja",
         "--from-text", "瑞鳳です。軽空母ですが、練度が上がれば、正規空母並の活躍をお見せできます。",
+        "--to-language", "en",
         "--to-text", "I'm Zuihou. Even though I'm a light carrier, I can show you that I'll be as good as standard carriers with some experience."
       ],
       "console": "integratedTerminal",
@@ -25,6 +26,7 @@
       "args": [
         "--from-language", "en",
         "--from-text", "I'm Zuihou. Even though I'm a light carrier, I can show you that I'll be as good as standard carriers with some experience.",
+        "--to-language", "ja",
         "--to-text", "瑞鳳です。軽空母ですが、練度が上がれば、正規空母並の活躍をお見せできます。"
       ],
       "console": "integratedTerminal",

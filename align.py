@@ -23,9 +23,10 @@ MODEL = 'qiyuw/WSPAlign-ft-kftt'
 # part of `question` that's wrapped in this marker.
 MARKER = ' ¶ '
 
-# Predictions with scores below this threshold will be discarded. Filters out
-# the AI's "wild guesses", often resulting from the translations not being 1:1.
-THRESHOLD = 0.1
+# Predictions with scores below the threshold will be discarded. A threshold of
+# 0.1 filters out the AI's "wild guesses," while 0.9 and above will return only
+# what the AI seems to consider "high confidence" results.
+DEFAULT_THRESHOLD = 0.1
 
 # These tokenizers are used solely to mark words (often morphemes) in the 'from'
 # text for alignment; the ML pipeline gets fed untokenized strings which get
@@ -53,10 +54,10 @@ def print_alignment(from_text: str, from_start: int, from_end: int, to_text: str
   if to_text is not None:
     print(wrap_token(to_text, to_start, to_end, color, '\033[m'), file=sys.stderr, end='\n\n')
 
-def align(from_language: str, from_text: str, to_text: str) -> list[int]:
+def align_forward(from_language: str, from_text: str, to_text: str, threshold: float = DEFAULT_THRESHOLD) -> list[int]:
   '''
   Returns an flat array of `from_start`, `from_end`, `to_start`, and `to_end`,
-  repeated for every token in `from_text`.
+  repeated for every token in `from_text` that aligns to a part of `to_text`.
   '''
   result: list[int] = []
   pipe = pipeline('question-answering', model=MODEL)
@@ -66,7 +67,7 @@ def align(from_language: str, from_text: str, to_text: str) -> list[int]:
       question=wrap_token(from_text, from_start, from_end),
       context=to_text)
 
-    if prediction['score'] < THRESHOLD:
+    if prediction['score'] < threshold:
       print_alignment(from_text, from_start, from_end, None, None, None)
       continue
 
@@ -76,12 +77,49 @@ def align(from_language: str, from_text: str, to_text: str) -> list[int]:
   assert len(result) % 4 == 0
   return result
 
+def align_reverse(from_text: str, to_language: str, to_text: str, threshold: float = DEFAULT_THRESHOLD) -> list[int]:
+  '''
+  Calls align_forward with the from and to swapped, then swaps the results back.
+  '''
+  result = align_forward(to_language, to_text, from_text, threshold)
+  reversed_result: list[int] = []
+  for i in range(0, len(result), 4):
+    reversed_result += [result[i + 2], result[i + 3], result[i], result[i + 1]]
+  return reversed_result
+
+def align(
+  from_language: str,
+  from_text: str,
+  to_language: str,
+  to_text: str,
+  threshold: float = DEFAULT_THRESHOLD,
+  include_reverse: bool = False) -> list[int]:
+  '''
+  Returns an flat array of `from_start`, `from_end`, `to_start`, and `to_end`,
+  repeated for every token in `from_text` that aligns to a part of `to_text`,
+  and vice versa if `include_reverse` is true.
+  '''
+  result = align_forward(from_language, from_text, to_text, threshold)
+  if include_reverse:
+    result += align_reverse(from_text, to_language, to_text, threshold)
+  return result
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('--from-language', type=str, required=True, choices=TOKENIZERS.keys())
   parser.add_argument('--from-text', type=str, required=True)
+  parser.add_argument('--to-language', type=str, required=True, choices=TOKENIZERS.keys())
   parser.add_argument('--to-text', type=str, required=True)
+  parser.add_argument('--threshold', type=float, default=DEFAULT_THRESHOLD)
+  parser.add_argument('--include-reverse', action='store_true', default=False)
   args = parser.parse_args()
 
-  result = align(args.from_language, args.from_text, args.to_text)
+  result = align(
+    args.from_language,
+    args.from_text,
+    args.to_language,
+    args.to_text,
+    args.threshold,
+    args.include_reverse)
+
   print(','.join(str(i) for i in result))

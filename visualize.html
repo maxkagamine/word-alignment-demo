@@ -128,12 +128,17 @@ svg {
     const wspSymmetricCheckbox = document.getElementById('wspSymmetricCheckbox');
     const swapButton = document.getElementById('swapButton');
 
+    let updatingHash = false;
+
+    window.addEventListener('hashchange', loadFromHash);
+    loadFromHash(/* shouldRender = */ false);
+
     fromTextInput.addEventListener('input', render);
     toTextInput.addEventListener('input', render);
     alignmentResultInput.addEventListener('input', render);
     darkMode.addEventListener('change', render);
     paletteDropdown.addEventListener('change', render);
-    render();
+    render(/* shouldUpdateHash = */ false);
 
     dlLink.addEventListener('click', () => {
       const svg = document.querySelector('#output svg');
@@ -151,6 +156,43 @@ svg {
     });
 
     form.addEventListener('submit', e => e.preventDefault());
+
+    function updateHash() {
+      const params = new URLSearchParams({
+        from: fromTextInput.value,
+        to: toTextInput.value,
+        result: alignmentResultInput.value,
+        wspThreshold: wspThresholdInput.value,
+        wspSymmetric: wspSymmetricCheckbox.checked,
+        awesomeModel: awesomeModelDropdown.value,
+        dark: darkMode.checked,
+        palette: paletteDropdown.value,
+      });
+      updatingHash = true;
+      console.log('Updating hash:', Object.fromEntries(params.entries()));
+      document.location.hash = '#' + params.toString();
+    }
+
+    function loadFromHash(shouldRender = true) {
+      const hash = document.location.hash.substr(1);
+      if (!hash || updatingHash) {
+        updatingHash = false;
+        return;
+      }
+      const params = new URLSearchParams(hash);
+      console.log('Loading from hash:', Object.fromEntries(params.entries()));
+      fromTextInput.value = params.get('from');
+      toTextInput.value = params.get('to');
+      alignmentResultInput.value = params.get('result');
+      wspThresholdInput.value = params.get('wspThreshold');
+      wspSymmetricCheckbox.checked = params.get('wspSymmetric') == 'true';
+      awesomeModelDropdown.value = params.get('awesomeModel');
+      darkMode.checked = params.get('dark') == 'true';
+      paletteDropdown.value = params.get('palette');
+      if (shouldRender) {
+        render(/* shouldUpdateHash = */ false);
+      }
+    }
 
     async function align(method) {
       form.disabled = true;
@@ -186,7 +228,11 @@ svg {
       }
     }
 
-    function render() {
+    function render(shouldUpdateHash = true) {
+      if (shouldUpdateHash) {
+        updateHash();
+      }
+
       document.body.classList.toggle('dark', darkMode.checked);
 
       const fromText = fromTextInput.value;

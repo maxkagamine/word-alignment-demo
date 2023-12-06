@@ -87,17 +87,17 @@ def align_reverse(from_text: str, to_language: str, to_text: str, threshold: flo
     reversed_result += [result[i + 2], result[i + 3], result[i], result[i + 1]]
   return reversed_result
 
-def dedupe(result: list[int]) -> list[int]:
-  '''Filters out duplicate alignment results.'''
-  deduped = []
+def dedupe_and_sort(result: list[int]) -> list[int]:
+  '''
+  Filters out duplicate alignments and sorts the result, first by "from" range
+  then by "to" range.
+  '''
+  deduped_groups = []
   for i in range(0, len(result), 4):
-    is_dupe = False
-    for j in range(0, len(deduped), 4):
-      if result[i:i+4] == deduped[j:j+4]:
-        is_dupe = True
-    if not is_dupe:
-      deduped += result[i:i+4]
-  return deduped
+    if result[i:i + 4] not in deduped_groups:
+      deduped_groups += [result[i:i + 4]]
+  deduped_groups.sort()
+  return [num for group in deduped_groups for num in group]
 
 def align(
   from_language: str,
@@ -114,7 +114,7 @@ def align(
   result = align_forward(from_language, from_text, to_text, threshold)
   if symmetric:
     result += align_reverse(from_text, to_language, to_text, threshold)
-    result = dedupe(result)
+    result = dedupe_and_sort(result)
   return result
 
 if __name__ == '__main__':

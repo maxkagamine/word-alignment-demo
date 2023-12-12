@@ -329,7 +329,7 @@ text {
         const from = fromText.substring(fromStart, fromEnd);
         const to = toText.substring(toStart, toEnd);
 
-        if (!/\p{L}/u.test(from) && !/\p{L}/u.test(to)) {
+        if (!/[\p{L}\p{N}]/u.test(from) || !/[\p{L}\p{N}]/u.test(to)) {
           console.log(`Skipping alignment of punctuation/symbol: ${from} (${fromStart}) => ${to} (${toStart})`);
           return false;
         }

@@ -45,14 +45,15 @@ def wrap_token(from_text: str, start: int, end: int, start_marker: str = MARKER,
   '''Wraps the part of the text to be aligned.'''
   return f'{from_text[:start]}{start_marker}{from_text[start:end]}{end_marker}{from_text[end:]}'
 
-def print_alignment(from_text: str, from_start: int, from_end: int, to_text: str|None, to_start: int|None, to_end: int|None):
+def print_alignment(from_text: str, from_start: int, from_end: int, to_text: str, to_start: int, to_end: int, score: float|None = None, is_above_threshold: bool = True):
   '''Shows a visual of the alignment result for a token on stderr.'''
   if not sys.stderr.isatty():
     return
-  color = '\033[32m' if to_text is not None else '\033[31m'
-  print(wrap_token(from_text, from_start, from_end, color, '\033[m'), file=sys.stderr, end='\n' if to_text is not None else '\n\n')
-  if to_text is not None:
-    print(wrap_token(to_text, to_start, to_end, color, '\033[m'), file=sys.stderr, end='\n\n')
+  color = '\033[32m' if is_above_threshold else '\033[31m'
+  print(wrap_token(from_text, from_start, from_end, color, '\033[m'), file=sys.stderr)
+  print(wrap_token(to_text, to_start, to_end, color, '\033[m'), file=sys.stderr, end='\n\n' if score is None else '')
+  if score is not None:
+    print(f' \033[1;30m(score = {score:.10f})\033[m', file=sys.stderr, end='\n\n')
 
 def align_forward(from_language: str, from_text: str, to_text: str, threshold: float = DEFAULT_THRESHOLD) -> list[int]:
   '''
@@ -67,12 +68,11 @@ def align_forward(from_language: str, from_text: str, to_text: str, threshold: f
       question=wrap_token(from_text, from_start, from_end),
       context=to_text)
 
-    if prediction['score'] < threshold:
-      print_alignment(from_text, from_start, from_end, None, None, None)
-      continue
+    is_above_threshold = prediction['score'] >= threshold
+    print_alignment(from_text, from_start, from_end, to_text, prediction['start'], prediction['end'], prediction['score'], is_above_threshold)
 
-    print_alignment(from_text, from_start, from_end, to_text, prediction['start'], prediction['end'])
-    result += [from_start, from_end, prediction['start'], prediction['end']]
+    if is_above_threshold:
+      result += [from_start, from_end, prediction['start'], prediction['end']]
 
   assert len(result) % 4 == 0
   return result

@@ -153,6 +153,18 @@ svg {
       const fromText = fromTextInput.value;
       fromTextInput.value = toTextInput.value;
       toTextInput.value = fromText;
+
+      if (alignmentResultInput.value) {
+        const alignmentResult = parseAlignmentResult(alignmentResultInput.value);
+        let reversedNums = [];
+
+        for (const alignment of alignmentResult) {
+          reversedNums.push(alignment.toStart, alignment.toEnd, alignment.fromStart, alignment.fromEnd);
+        }
+
+        alignmentResultInput.value = reversedNums.join(',');
+        render();
+      }
     });
 
     form.addEventListener('submit', e => e.preventDefault());

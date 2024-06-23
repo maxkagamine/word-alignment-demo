@@ -28,9 +28,9 @@ MARKER = ' ¶ '
 # what the AI seems to consider "high confidence" results.
 DEFAULT_THRESHOLD = 0.1
 
-# These tokenizers are used solely to mark words (often morphemes) in the 'from'
-# text for alignment; the ML pipeline gets fed untokenized strings which get
-# broken down differently and mapped to vocab ids by the model's BertTokenizer.
+# These tokenizers are used to mark words (often morphemes) in the 'from' text
+# for alignment; the ML pipeline gets fed untokenized strings which get broken
+# down differently and mapped to vocab ids by the model's BertTokenizer.
 TOKENIZERS = {
   'en': English().tokenizer,
   'ja': Japanese().tokenizer
@@ -40,6 +40,14 @@ def get_token_ranges(language: str, text: str) -> list[tuple[int, int]]:
   '''Tokenizes the text and returns an array of (start, end) for each token.'''
   tokenizer = TOKENIZERS[language]
   return [(t.idx, t.idx + len(t)) for t in tokenizer(text)]
+
+def find_token_indexes(token_ranges: list[tuple[int, int]], start: int, end: int) -> list[int]:
+  '''Finds the token ranges that intersect the given range.'''
+  indexes: list[int] = []
+  for i, (token_start, token_end) in enumerate(token_ranges):
+    if end > token_start and start < token_end:
+      indexes += [i]
+  return indexes
 
 def wrap_token(from_text: str, start: int, end: int, start_marker: str = MARKER, end_marker: str = MARKER) -> str:
   '''Wraps the part of the text to be aligned.'''
@@ -55,15 +63,20 @@ def print_alignment(from_text: str, from_start: int, from_end: int, to_text: str
   if score is not None:
     print(f' \033[1;30m(score = {score:.10f})\033[m', file=sys.stderr, end='\n\n')
 
-def align_forward(from_language: str, from_text: str, to_text: str, threshold: float = DEFAULT_THRESHOLD) -> list[int]:
+def align_forward(
+  from_token_ranges: list[tuple[int, int]],
+  to_token_ranges: list[tuple[int, int]],
+  from_text: str,
+  to_text: str,
+  threshold: float = DEFAULT_THRESHOLD) -> list[tuple[int, int]]:
   '''
-  Returns an flat array of `from_start`, `from_end`, `to_start`, and `to_end`,
-  repeated for every token in `from_text` that aligns to a part of `to_text`.
+  Runs the ML model and returns a list of token pairs mapping indexes of tokens
+  in `from_token_ranges` to those of `to_token_ranges`.
   '''
-  result: list[int] = []
+  result: list[tuple[int, int]] = []
   pipe = pipeline('question-answering', model=MODEL)
 
-  for (from_start, from_end) in get_token_ranges(from_language, from_text):
+  for from_token, (from_start, from_end) in enumerate(from_token_ranges):
     prediction = pipe(
       question=wrap_token(from_text, from_start, from_end),
       context=to_text)
@@ -72,32 +85,46 @@ def align_forward(from_language: str, from_text: str, to_text: str, threshold: f
     print_alignment(from_text, from_start, from_end, to_text, prediction['start'], prediction['end'], prediction['score'], is_above_threshold)
 
     if is_above_threshold:
-      result += [from_start, from_end, prediction['start'], prediction['end']]
+      to_tokens = find_token_indexes(to_token_ranges, prediction['start'], prediction['end'])
+      result += [(from_token, to_token) for to_token in to_tokens]
 
-  assert len(result) % 4 == 0
   return result
 
-def align_reverse(from_text: str, to_language: str, to_text: str, threshold: float = DEFAULT_THRESHOLD) -> list[int]:
+def align_reverse(
+  from_token_ranges: list[tuple[int, int]],
+  to_token_ranges: list[tuple[int, int]],
+  from_text: str,
+  to_text: str,
+  threshold: float = DEFAULT_THRESHOLD) -> list[tuple[int, int]]:
   '''
   Calls align_forward with the from and to swapped, then swaps the results back.
   '''
-  result = align_forward(to_language, to_text, from_text, threshold)
-  reversed_result: list[int] = []
-  for i in range(0, len(result), 4):
-    reversed_result += [result[i + 2], result[i + 3], result[i], result[i + 1]]
-  return reversed_result
+  result = align_forward(to_token_ranges, from_token_ranges, to_text, from_text, threshold)
+  return [(to_token, from_token) for (from_token, to_token) in result]
 
-def dedupe_and_sort(result: list[int]) -> list[int]:
+def dedupe_and_sort(token_pairs: list[tuple[int, int]]) -> list[tuple[int, int]]:
+  '''Filters out duplicate alignments and sorts the result.'''
+  result = list(set(token_pairs))
+  result.sort()
+  return result
+
+def token_pairs_to_ranges(
+  from_token_ranges: list[tuple[int, int]],
+  to_token_ranges: list[tuple[int, int]],
+  token_pairs: list[tuple[int, int]]) -> list[int]:
   '''
-  Filters out duplicate alignments and sorts the result, first by "from" range
-  then by "to" range.
+  Converts a list of token index pairs (`from_token`, `to_token`) to a flat
+  array of `from_start`, `from_end`, `to_start`, and `to_end`.
   '''
-  deduped_groups = []
-  for i in range(0, len(result), 4):
-    if result[i:i + 4] not in deduped_groups:
-      deduped_groups += [result[i:i + 4]]
-  deduped_groups.sort()
-  return [num for group in deduped_groups for num in group]
+  result: list[int] = []
+
+  for (from_token, to_token) in token_pairs:
+    (from_start, from_end) = from_token_ranges[from_token]
+    (to_start, to_end) = to_token_ranges[to_token]
+    result += [from_start, from_end, to_start, to_end]
+
+  assert len(result) % 4 == 0
+  return result
 
 def align(
   from_language: str,
@@ -111,11 +138,15 @@ def align(
   repeated for every token in `from_text` that aligns to a part of `to_text`,
   and vice versa if `symmetric` is true.
   '''
-  result = align_forward(from_language, from_text, to_text, threshold)
+  from_token_ranges = get_token_ranges(from_language, from_text)
+  to_token_ranges = get_token_ranges(to_language, to_text)
+
+  token_pairs = align_forward(from_token_ranges, to_token_ranges, from_text, to_text, threshold)
   if symmetric:
-    result += align_reverse(from_text, to_language, to_text, threshold)
-    result = dedupe_and_sort(result)
-  return result
+    token_pairs += align_reverse(from_token_ranges, to_token_ranges, from_text, to_text, threshold)
+
+  token_pairs = dedupe_and_sort(token_pairs)
+  return token_pairs_to_ranges(from_token_ranges, to_token_ranges, token_pairs)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()

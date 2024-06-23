@@ -23,7 +23,8 @@ def run_awesome(model: str, input_file_path: str, output_file_path: str):
     'python3', '-m', 'awesome_align.run_align',
     '--output_file', os.path.join('..', output_file_path),
     '--model_name_or_path', model,
-    '--data_file', os.path.join('..', input_file_path)
+    '--data_file', os.path.join('..', input_file_path),
+    '--cache_dir', '../models/bert'
   ], cwd='./awesome-align')
   if ret != 0:
     raise ValueError('awesome-align failed')
@@ -67,7 +68,7 @@ if __name__ == '__main__':
   parser.add_argument('--from-text', type=str, required=True)
   parser.add_argument('--to-language', type=str, required=True, choices=TOKENIZERS.keys())
   parser.add_argument('--to-text', type=str, required=True)
-  parser.add_argument('--model', type=str, default=None)
+  parser.add_argument('--model', type=str, required=True)
   args = parser.parse_args()
 
   result = align(

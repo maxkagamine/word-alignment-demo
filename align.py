@@ -15,6 +15,7 @@ import sys
 from spacy.lang.en import English
 from spacy.lang.ja import Japanese
 from transformers import pipeline
+from simplify import simplify
 
 # BERT-based model pretrained on the Kyoto Free Translation Task (KFTT) dataset.
 MODEL = 'qiyuw/WSPAlign-ft-kftt'
@@ -102,12 +103,6 @@ def align_reverse(
   result = align_forward(to_token_ranges, from_token_ranges, to_text, from_text, threshold)
   return [(to_token, from_token) for (from_token, to_token) in result]
 
-def dedupe_and_sort(token_pairs: list[tuple[int, int]]) -> list[tuple[int, int]]:
-  '''Filters out duplicate alignments and sorts the result.'''
-  result = list(set(token_pairs))
-  result.sort()
-  return result
-
 def token_pairs_to_ranges(
   from_token_ranges: list[tuple[int, int]],
   to_token_ranges: list[tuple[int, int]],
@@ -132,7 +127,8 @@ def align(
   to_language: str,
   to_text: str,
   threshold: float = DEFAULT_THRESHOLD,
-  symmetric: bool = False) -> list[int]:
+  symmetric: bool = False,
+  simplify_result: bool = True) -> list[int]:
   '''
   Returns an flat array of `from_start`, `from_end`, `to_start`, and `to_end`,
   repeated for every token in `from_text` that aligns to a part of `to_text`,
@@ -145,8 +141,8 @@ def align(
   if symmetric:
     token_pairs += align_reverse(from_token_ranges, to_token_ranges, from_text, to_text, threshold)
 
-  token_pairs = dedupe_and_sort(token_pairs)
-  return token_pairs_to_ranges(from_token_ranges, to_token_ranges, token_pairs)
+  result = token_pairs_to_ranges(from_token_ranges, to_token_ranges, token_pairs)
+  return simplify(result, from_text, to_text) if simplify_result else result
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -156,6 +152,7 @@ if __name__ == '__main__':
   parser.add_argument('--to-text', type=str, required=True)
   parser.add_argument('--threshold', type=float, default=DEFAULT_THRESHOLD)
   parser.add_argument('--symmetric', action='store_true', default=False)
+  parser.add_argument('--no-simplify', action='store_true', default=False)
   args = parser.parse_args()
 
   result = align(
@@ -164,6 +161,7 @@ if __name__ == '__main__':
     args.to_language,
     args.to_text,
     args.threshold,
-    args.symmetric)
+    args.symmetric,
+    not args.no_simplify)
 
   print(','.join(str(i) for i in result))

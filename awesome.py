@@ -5,6 +5,7 @@ Runs awesome-align with the same tokenization and output format as align.py
 import argparse
 import os
 from align import get_token_ranges, print_alignment, TOKENIZERS
+from simplify import simplify
 from subprocess import call
 from tempfile import NamedTemporaryFile
 
@@ -29,7 +30,13 @@ def run_awesome(model: str, input_file_path: str, output_file_path: str):
   if ret != 0:
     raise ValueError('awesome-align failed')
 
-def parse_output(output: str, from_text: str, from_token_ranges: list[tuple[int, int]], to_text: str, to_token_ranges: list[tuple[int, int]]):
+def parse_output(
+    output: str,
+    from_text: str,
+    from_token_ranges: list[tuple[int, int]],
+    to_text: str,
+    to_token_ranges: list[tuple[int, int]],
+    simplify_result: bool = True):
   result: list[int] = []
   token_mappings = [(int(pair[0]), int(pair[1])) for pair in [pair.split('-') for pair in output.strip().split(' ')]]
   token_mappings.sort(key=lambda pair: pair[0])
@@ -41,9 +48,15 @@ def parse_output(output: str, from_text: str, from_token_ranges: list[tuple[int,
     result += [from_start, from_end, to_start, to_end]
 
   assert len(result) % 4 == 0
-  return result
+  return simplify(result, from_text, to_text) if simplify_result else result
 
-def align(from_language: str, from_text: str, to_language: str, to_text: str, model: str = 'bert-base-multilingual-cased'):
+def align(
+    from_language: str,
+    from_text: str,
+    to_language: str,
+    to_text: str,
+    model: str = 'bert-base-multilingual-cased',
+    simplify_result: bool = True):
   with NamedTemporaryFile(mode='+w', prefix='awesome-', suffix='.tmp', dir='.') as input_file, \
        NamedTemporaryFile(mode='+w', prefix='awesome-', suffix='.tmp', dir='.') as output_file:
 
@@ -60,7 +73,8 @@ def align(from_language: str, from_text: str, to_language: str, to_text: str, mo
       from_text,
       from_token_ranges,
       to_text,
-      to_token_ranges)
+      to_token_ranges,
+      simplify_result)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -68,7 +82,8 @@ if __name__ == '__main__':
   parser.add_argument('--from-text', type=str, required=True)
   parser.add_argument('--to-language', type=str, required=True, choices=TOKENIZERS.keys())
   parser.add_argument('--to-text', type=str, required=True)
-  parser.add_argument('--model', type=str, required=True)
+  parser.add_argument('--model', type=str, default='bert-base-multilingual-cased')
+  parser.add_argument('--no-simplify', action='store_true', default=False)
   args = parser.parse_args()
 
   result = align(
@@ -76,7 +91,8 @@ if __name__ == '__main__':
     args.from_text,
     args.to_language,
     args.to_text,
-    args.model)
+    args.model,
+    not args.no_simplify)
 
   print(','.join(str(i) for i in result))
 

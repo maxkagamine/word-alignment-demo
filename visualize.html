@@ -88,7 +88,7 @@ svg {
       </fieldset>
     </div>
     <div>
-      <label>Alignment result: <input id="alignmentResultInput" value="0,2,4,10,2,4,0,3,4,5,10,11,5,6,30,35,6,8,36,43,8,10,25,27,10,11,12,23,11,12,43,44,15,18,73,80,18,19,70,72,20,22,84,92,22,24,93,101,25,26,73,83,26,28,112,122,29,30,102,106,30,32,51,59,32,34,47,50,34,36,47,50,36,37,122,123" /></label>
+      <label>Alignment result: <input id="alignmentResultInput" value="0,2,4,10,2,4,0,3,4,5,10,11,5,6,30,35,6,8,36,43,8,10,25,27,10,11,12,23,11,12,43,44,15,18,73,80,18,19,70,72,20,22,84,92,22,24,93,101,25,26,73,83,26,28,112,122,29,30,102,106,30,32,51,59,32,36,47,50,36,37,122,123" /></label>
       <label><input id="darkMode" type="checkbox" checked /> Dark mode</label>
       <select id="paletteDropdown">
         <option value="material" selected>Material</option>
@@ -251,7 +251,6 @@ svg {
       const toText = toTextInput.value;
 
       let alignmentResult = parseAlignmentResult(alignmentResultInput.value);
-      alignmentResult = mergeAlignments(alignmentResult, fromText, toText);
       alignmentResult = removePunctuationAlignments(alignmentResult, fromText, toText);
 
       console.log('fromText =', fromText);
@@ -346,68 +345,6 @@ text {
 
         return true;
       });
-    }
-
-    /**
-     * Merges alignments where one side points to the exact same range and the
-     * other side is overlapping or adjacent.
-     */
-    function mergeAlignments(result, fromText, toText) {
-      const removed = new Set();
-      let modifiedList;
-      do {
-        modifiedList = false;
-        for (let i = 0; i < result.length; i++) {
-          const cur = result[i];
-          if (removed.has(cur)) {
-            continue;
-          }
-
-          for (let j = i + 1; j < result.length; j++) {
-            const other = result[j];
-            if (removed.has(other)) {
-              continue;
-            }
-
-            if (
-              isOverlappingOrAdjacent(cur.fromStart, cur.fromEnd, other.fromStart, other.fromEnd, fromText) &&
-              other.toStart == cur.toStart &&
-              other.toEnd == cur.toEnd
-            ) {
-              // Merge adjacent/overlapping 'from' tokens (allowing a space in between) that point to the same 'to' range
-              console.log(`Merging ${fromText.substring(other.fromStart, other.fromEnd)} (${other.fromStart}) => ${toText.substring(other.toStart, other.toEnd)} (${other.toStart}) with ${fromText.substring(cur.fromStart, cur.fromEnd)} (${cur.fromStart}) => ${toText.substring(cur.toStart, cur.toEnd)} (${cur.toStart})`);
-              cur.fromStart = Math.min(cur.fromStart, other.fromStart);
-              cur.fromEnd = Math.max(cur.fromEnd, other.fromEnd);
-              removed.add(other);
-              modifiedList = true;
-            }
-            else if (
-              isOverlappingOrAdjacent(cur.toStart, cur.toEnd, other.toStart, other.toEnd, toText) &&
-              other.fromStart == cur.fromStart &&
-              other.fromEnd == cur.fromEnd
-            ) {
-              // Merge adjacent/overlapping 'to' tokens (allowing a space in between) that point to the same 'from' range
-              console.log(`Merging ${fromText.substring(other.fromStart, other.fromEnd)} (${other.fromStart}) => ${toText.substring(other.toStart, other.toEnd)} (${other.toStart}) with ${fromText.substring(cur.fromStart, cur.fromEnd)} (${cur.fromStart}) => ${toText.substring(cur.toStart, cur.toEnd)} (${cur.toStart})`);
-              cur.toStart = Math.min(cur.toStart, other.toStart);
-              cur.toEnd = Math.max(cur.toEnd, other.toEnd);
-              removed.add(other);
-              modifiedList = true;
-            }
-          }
-        }
-        result = result.filter(x => !removed.has(x));
-      } while (modifiedList);
-      return result;
-    }
-
-    /**
-     * Returns true if [start1,end1) overlaps with, touches, or is separated by
-     * only whitespace from [start2,end2).
-     */
-    function isOverlappingOrAdjacent(start1, end1, start2, end2, text) {
-      return (end1 < start2 && !/\S/.test(text.substring(end1, start2))) ||
-             (start1 <= end2 && end1 >= start2) ||
-             (start1 > end2 && !/\S/.test(text.substring(end2, start1)));
     }
 
     function createTextElement(str, id, attrs = {}) {

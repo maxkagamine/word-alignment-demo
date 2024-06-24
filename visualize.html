@@ -33,7 +33,7 @@ legend {
   font-size: 0.75em;
   opacity: 0.9;
 }
-input:not([type="checkbox"]) {
+input:not([type]) {
   width: 500px;
 }
 input[type="number"] {
@@ -57,6 +57,14 @@ svg {
   display: inline-block;
   margin-top: 2em;
 }
+label:has([name="wspSymmetricMode"]) {
+  label:has(#wspSymmetricCheckbox:not(:checked)) ~ & {
+    display: none;
+  }
+  & + & {
+    margin-left: 0;
+  }
+}
 </style>
 </head>
 <body>
@@ -72,6 +80,8 @@ svg {
         <legend>WSP</legend>
         <label>Threshold: <input id="wspThresholdInput" type="number" value="0.1" min="0" max="1" step="0.1" /></label>
         <label><input id="wspSymmetricCheckbox" type="checkbox" /> <abbr title="Combines the results of reverse alignment.">Symmetric</abbr></label>
+        <label><input name="wspSymmetricMode" type="radio" value="AND" checked /> AND</label>
+        <label><input name="wspSymmetricMode" type="radio" value="OR" /> OR</label>
         <button id="alignWspButton">Align</button>
       </fieldset>
       <fieldset>
@@ -126,6 +136,7 @@ svg {
     const awesomeModelDropdown = document.getElementById('awesomeModelDropdown');
     const wspThresholdInput = document.getElementById('wspThresholdInput');
     const wspSymmetricCheckbox = document.getElementById('wspSymmetricCheckbox');
+    const wspSymmetricModes = Array.from(document.getElementsByName('wspSymmetricMode'));
     const swapButton = document.getElementById('swapButton');
 
     let updatingHash = false;
@@ -176,6 +187,7 @@ svg {
         result: alignmentResultInput.value,
         wspThreshold: wspThresholdInput.value,
         wspSymmetric: wspSymmetricCheckbox.checked,
+        wspSymmetricMode: wspSymmetricModes.find(el => el.checked).value,
         awesomeModel: awesomeModelDropdown.value,
         dark: darkMode.checked,
         palette: paletteDropdown.value,
@@ -198,6 +210,7 @@ svg {
       alignmentResultInput.value = params.get('result');
       wspThresholdInput.value = params.get('wspThreshold');
       wspSymmetricCheckbox.checked = params.get('wspSymmetric') == 'true';
+      wspSymmetricModes.forEach(el => el.checked = el.value == params.get('wspSymmetricMode'));
       awesomeModelDropdown.value = params.get('awesomeModel');
       darkMode.checked = params.get('dark') == 'true';
       paletteDropdown.value = params.get('palette');
@@ -225,6 +238,7 @@ svg {
             awesomeModel: awesomeModelDropdown.value,
             wspThreshold: wspThresholdInput.value,
             wspSymmetric: wspSymmetricCheckbox.checked,
+            wspSymmetricMode: wspSymmetricModes.find(el => el.checked).value,
           })
         });
         const json = await res.json();

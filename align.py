@@ -128,6 +128,7 @@ def align(
   to_text: str,
   threshold: float = DEFAULT_THRESHOLD,
   symmetric: bool = False,
+  symmetric_mode: str = 'AND',
   simplify_result: bool = True) -> list[int]:
   '''
   Returns an flat array of `from_start`, `from_end`, `to_start`, and `to_end`,
@@ -138,8 +139,13 @@ def align(
   to_token_ranges = get_token_ranges(to_language, to_text)
 
   token_pairs = align_forward(from_token_ranges, to_token_ranges, from_text, to_text, threshold)
+
   if symmetric:
-    token_pairs += align_reverse(from_token_ranges, to_token_ranges, from_text, to_text, threshold)
+    reverse_token_pairs = align_reverse(from_token_ranges, to_token_ranges, from_text, to_text, threshold)
+    if symmetric_mode == 'AND':
+      token_pairs = [x for x in token_pairs if x in reverse_token_pairs]
+    else:
+      token_pairs += reverse_token_pairs
 
   result = token_pairs_to_ranges(from_token_ranges, to_token_ranges, token_pairs)
   return simplify(result, from_text, to_text) if simplify_result else result
@@ -152,6 +158,7 @@ if __name__ == '__main__':
   parser.add_argument('--to-text', type=str, required=True)
   parser.add_argument('--threshold', type=float, default=DEFAULT_THRESHOLD)
   parser.add_argument('--symmetric', action='store_true', default=False)
+  parser.add_argument('--symmetric-mode', type=str, default='AND', choices=['AND', 'OR'])
   parser.add_argument('--no-simplify', action='store_true', default=False)
   args = parser.parse_args()
 
@@ -162,6 +169,7 @@ if __name__ == '__main__':
     args.to_text,
     args.threshold,
     args.symmetric,
+    args.symmetric_mode,
     not args.no_simplify)
 
   print(','.join(str(i) for i in result))

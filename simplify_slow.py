@@ -16,7 +16,7 @@ into smaller sub-graphs of intersecting alignments but couldn't get acceptable
 results. There may be a way to optimize this, but I've spent too much time on it
 already, so I've instead opted for a simpler, repeated-forward-pass approach
 which, while it doesn't produce the optimal result in all cases, is good enough
-for real-world sentence pairs.
+for real-world sentence pairs -- and more importantly is 8000x faster.
 
 Examples:
 

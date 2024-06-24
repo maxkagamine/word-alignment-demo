@@ -9,7 +9,14 @@ Two alignments are eligible to be merged if:
 - Both point to the same span on one side and are overlapping, adjacent, or
   separated by only whitespace on the other.
 
-The time complexity of this algorithm is O(scary).
+WARNING: The time complexity of this algorithm is O(scary). Even on a fairly
+powerful machine, a non-trivial aligned sentence pair took 4.5 min to simplify.
+I attempted to reduce the number of iterations necessary by breaking the problem
+into smaller sub-graphs of intersecting alignments but couldn't get acceptable
+results. There may be a way to optimize this, but I've spent too much time on it
+already, so I've instead opted for a simpler, repeated-forward-pass approach
+which, while it doesn't produce the optimal result in all cases, is good enough
+for real-world sentence pairs.
 
 Examples:
 
@@ -53,6 +60,7 @@ def simplify(alignments: list[int], from_text: str, to_text: str) -> list[int]:
   queue = deque([best])
 
   # Perform a breadth-first search to look for the most compact representation
+  # “I'm sure this is fine, it's only, like, O(n!ⁿꜝ).” --Famous last words
   while len(queue) > 0:
     current = queue.popleft()
     # print(_debug(current, from_text, to_text))

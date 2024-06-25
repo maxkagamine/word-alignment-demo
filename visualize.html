@@ -111,6 +111,7 @@ label:has([name="wspSymmetricMode"]) {
 
   <a id="download" href="#" hidden>Download SVG</a>
 
+  <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js"></script>
   <script>
     const EM = 30;
     const TEXT_SPACING = 7 * EM;
@@ -140,6 +141,17 @@ label:has([name="wspSymmetricMode"]) {
     const swapButton = document.getElementById('swapButton');
 
     let updatingHash = false;
+
+    const fontsPromise = new Promise(resolve => {
+      WebFont.load({
+        google: {
+          families: ['Noto Sans JP']
+        },
+        timeout: 10000,
+        active: resolve,
+        inactive: resolve
+      });
+    });
 
     window.addEventListener('hashchange', loadFromHash);
     loadFromHash(/* shouldRender = */ false);
@@ -254,7 +266,7 @@ label:has([name="wspSymmetricMode"]) {
       }
     }
 
-    function render(shouldUpdateHash = true) {
+    async function render(shouldUpdateHash = true) {
       if (shouldUpdateHash) {
         updateHash();
       }
@@ -300,6 +312,14 @@ text {
       svg.appendChild(fromTextEl);
       svg.appendChild(toTextEl);
 
+      console.log('Waiting for fonts');
+      await fontsPromise;
+
+      setViewBox(svg);
+      setTimeout(() => setViewBox(svg), 10); // Hack
+      setTimeout(() => setViewBox(svg), 100); // Hack
+      setTimeout(() => setViewBox(svg), 1000); // Hackity hack
+
       centerHorizontally(fromTextEl, toTextEl);
 
       for (let i = 0; i < alignmentResult.length; i++) {
@@ -308,11 +328,6 @@ text {
         console.log(`Drawing alignment for ${fromText.substring(fromStart, fromEnd)} (${fromStart}) => ${toText.substring(toStart, toEnd)} (${toStart})`);
         drawAlignment(svg, fromStart, fromEnd, toStart, toEnd, palette[i % palette.length]);
       }
-
-      setViewBox(svg);
-      setTimeout(() => setViewBox(svg), 10); // Hack
-      setTimeout(() => setViewBox(svg), 100); // Hack
-      setTimeout(() => setViewBox(svg), 1000); // Hackity hack
 
       outputEl.classList.remove('loading');
 

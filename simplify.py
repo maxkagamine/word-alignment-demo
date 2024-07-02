@@ -46,7 +46,7 @@ def simplify(alignments: list[int], from_text: str, to_text: str) -> list[int]:
 
         # _debug([x for x in result if not x in removed], from_text, to_text)
 
-    result = [x for x in result if not x in removed]
+    result = sorted(x for x in result if not x in removed)
     removed.clear()
 
   return ungroup_alignments(result)

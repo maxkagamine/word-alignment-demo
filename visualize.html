@@ -347,7 +347,20 @@ text {
     }
 
     function parseAlignmentResult(alignmentResultStr) {
-      const numbers = alignmentResultStr.split(',').map(x => parseInt(x));
+      let numbers = [];
+      if (alignmentResultStr.includes(',')) {
+        numbers = alignmentResultStr.split(',').map(x => parseInt(x));
+      } else {
+        // Supports a separate project
+        console.log('Alignment result is not an array. Trying to decode base64-encoded ushort[]...');
+        try {
+          const bytes = Uint8Array.from(atob(alignmentResultStr), m => m.codePointAt(0));
+          numbers = new Uint16Array(bytes.buffer);
+          console.log('Decoded:', numbers.join(','));
+        } catch (e) {
+          console.error(e);
+        }
+      }
       if (numbers.length % 4 != 0 || numbers.some(isNaN)) {
         return [];
       }

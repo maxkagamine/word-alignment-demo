@@ -50,6 +50,7 @@ input, select, button {
 svg {
   width: 100%;
   max-height: 50vh;
+  cursor: default;
 }
 .loading {
   opacity: 0;
@@ -300,6 +301,7 @@ label:has([name="wspSymmetricMode"]) {
       outputEl.appendChild(svg);
 
       const style = createSvgElement('style');
+      const selectors = [];
       style.innerHTML = `@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap');
 text {
   font-family: 'Noto Sans JP', sans-serif;
@@ -325,10 +327,21 @@ text {
 
       for (let i = 0; i < alignmentResult.length; i++) {
         const { fromStart, fromEnd, toStart, toEnd } = alignmentResult[i];
+        const name = `a${i}`;
 
         console.log(`Drawing alignment for ${fromText.substring(fromStart, fromEnd)} (${fromStart}) => ${toText.substring(toStart, toEnd)} (${toStart})`);
-        drawAlignment(svg, fromStart, fromEnd, toStart, toEnd, palette[i % palette.length]);
+        drawAlignment(svg, fromStart, fromEnd, toStart, toEnd, palette[i % palette.length], name);
+
+        selectors.push(`svg:has(.${name}:hover) .${name}`);
       }
+
+      style.innerHTML += `
+svg:has([class]:is(tspan, rect):hover) :is(tspan, rect, line) {
+  filter: opacity(0.33);
+}
+${selectors.join(', ')} {
+  filter: none;
+}`;
 
       outputEl.classList.remove('loading');
 
@@ -472,7 +485,7 @@ text {
     }
 
     /** @param {SVGElement} svg */
-    function drawAlignment(svg, fromStart, fromEnd, toStart, toEnd, color) {
+    function drawAlignment(svg, fromStart, fromEnd, toStart, toEnd, color, name) {
       const fromRect = getCharacterRangeRect(svg, FROM_TEXT_ID, fromStart, fromEnd);
       const toRect = getCharacterRangeRect(svg, TO_TEXT_ID, toStart, toEnd);
 
@@ -490,16 +503,21 @@ text {
       line.setAttribute('y2', toRect.top - LINE_SPACING + LINE_ORIGIN_OFFSET);
       line.setAttribute('stroke', color);
       line.setAttribute('stroke-width', '2');
+      line.classList.add(name);
 
       svg.appendChild(line);
 
       // Set text color
       for (let i = fromStart; i < fromEnd; i++) {
-        svg.getElementById(FROM_TEXT_ID + i).setAttribute('fill', color);
+        const tspan = svg.getElementById(FROM_TEXT_ID + i);
+        tspan.setAttribute('fill', color);
+        tspan.classList.add(name);
       }
 
       for (let i = toStart; i < toEnd; i++) {
-        svg.getElementById(TO_TEXT_ID + i).setAttribute('fill', color);
+        const tspan = svg.getElementById(TO_TEXT_ID + i);
+        tspan.setAttribute('fill', color);
+        tspan.classList.add(name);
       }
 
       // Draw highlight rectangles under text
@@ -511,6 +529,7 @@ text {
         highlight.setAttribute('height', rect.height - offsetTop - offsetBottom);
         highlight.setAttribute('fill', color);
         highlight.setAttribute('opacity', darkMode.checked ? '0.08' : '0.14');
+        highlight.classList.add(name);
 
         svg.insertBefore(highlight, svg.querySelector('text'));
       };

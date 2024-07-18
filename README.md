@@ -1,4 +1,4 @@
-# Demonstration of AI/neural word alignment of English & Japanese text using mBERT-based machine learning models.<br>日本語と英語の文に対してmBERTベースの機械学習モデルを使用したAI・ニューラル単語アライメントのデモ。
+# Demonstration of AI/neural word alignment of English & Japanese text using mBERT-based machine learning models.<br>日本語と英語の文に対してmBERTベースの機械学習モデルを使用したAI・ニューラル単語アラインメントのデモ｡
 
 ![](screenshot.png)
 
@@ -17,6 +17,8 @@ My initial hypothesis was that awesome-align's use of the actual word embeddings
 I suspect the lack of adequate training data may be a problem: as far as I'm aware, KFTT is the only manually-word-aligned parallel corpus that exists for English & Japanese. It's also possible the way [mBERT's tokenization](https://github.com/google-research/bert/blob/master/multilingual.md#tokenization) handles Japanese is a factor: [all kanji words are split into single characters](https://qiita.com/tmitani/items/e520e0a085c9e4ee69ed) _(article in Japanese)_. I'd be curious to see if fine-tuning a model based on Tohoku University's [bert-japanese](https://github.com/cl-tohoku/bert-japanese) would improve accuracy, as it appears to use a better, Japanese-specific tokenizer leveraging MeCab.
 
 That being said, it's quite impressive how much it gets right. I recommend trying it for yourself with different example sentences to see how the models perform.
+
+![](screenshot-hover.avif)
 
 ## Running the visualization server　可視化サーバーの実行
 

@@ -48,9 +48,13 @@ input, select, button {
   margin-left: 0;
 }
 svg {
-  width: 100%;
-  max-height: 50vh;
   cursor: default;
+}
+#output:not(.loading) svg {
+  /* Firefox does not calculate the bounding box of tspan's correctly when the svg is scaled. */
+  width: 100%;
+  height: auto;
+  max-height: 50vh;
 }
 .loading {
   opacity: 0;
@@ -336,11 +340,9 @@ text {
       }
 
       style.innerHTML += `
-svg:has([class]:is(tspan, rect):hover) :is(tspan, rect, line) {
-  filter: opacity(0.33);
-}
-${selectors.join(', ')} {
-  filter: none;
+svg:has([class]:is(tspan, rect):hover) :is(tspan, rect, line):not(${selectors.join(', ')}) {
+  fill-opacity: 0.33;
+  stroke-opacity: 0.33;
 }`;
 
       outputEl.classList.remove('loading');
@@ -444,6 +446,8 @@ ${selectors.join(', ')} {
         return size;
       }, { width: 0, height: 0 });
       svg.setAttribute('viewBox', `0 0 ${size.width} ${size.height}`);
+      svg.setAttribute('width', size.width);
+      svg.setAttribute('height', size.height);
     }
 
     function getCharacterRangeRect(svg, textId, start, end) {

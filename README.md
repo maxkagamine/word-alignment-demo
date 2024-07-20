@@ -2,6 +2,8 @@
 
 ![](screenshot.png)
 
+[日本語版](README.ja.md)
+
 I've created a visualization tool for experimenting with and comparing two state-of-the-art English–Japanese word alignment tools, both of which are based on [multilingual BERT](https://research.google/blog/open-sourcing-bert-state-of-the-art-pre-training-for-natural-language-processing/) but tackle the problem in different ways:
 
 - [**WSPAlign**](https://github.com/qiyuw/WSPAlign), which is based on [earlier work by NTT](https://github.com/nttcslab-nlp/word_align), uses [question-answering](https://medium.com/analytics-vidhya/question-answering-system-with-bert-ebe1130f8def) to find the span in the _context_ ("to" text) corresponding to a marked word in the _question_ ("from" text), and repeats this for every word in the "from" text. _Note: This repo uses the WSPAlign [model](https://huggingface.co/qiyuw/WSPAlign-ft-kftt) only; the inference code is written from scratch as [the original](https://github.com/qiyuw/WSPAlign.InferEval) is not FOSS._

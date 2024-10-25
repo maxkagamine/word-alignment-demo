@@ -25,7 +25,7 @@ That being said, it's quite impressive how much it gets right. I recommend tryin
 ## Running the visualization server　可視化サーバーの実行
 
 ```
-$ git clone https://github.com/maxkagamine/word-alignment-demo.git
+$ git clone --recurse-submodules https://github.com/maxkagamine/word-alignment-demo.git
 $ cd word-alignment-demo
 $ python3 -m venv .venv && . .venv/bin/activate
 $ pip install -r requirements.txt

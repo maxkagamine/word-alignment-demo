@@ -1,8 +1,8 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 spacy[ja]==3.7.2
-torch==2.1.1+cpu
-transformers==4.36.2
+torch==2.5.0+cpu
+transformers==4.46.0
 
 # awesome-align
 boto3==1.33.5

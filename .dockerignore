@@ -1,0 +1,6 @@
+*
+!awesome-align
+!requirements.txt
+!*.py
+!*.html
+**/*.pyc

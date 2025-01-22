@@ -32,6 +32,13 @@ $ pip install -r requirements.txt
 $ ./visualize.py
 ```
 
+Wheelのビルドに問題があれば、代わりにDockerで実行できる：
+
+```
+$ docker build -t word-alignment-demo .
+$ docker run -it --rm -v ~/.cache/huggingface/hub:/root/.cache/huggingface/hub -v ./models:/app/models -p 5000:5000 word-alignment-demo
+```
+
 WSPAlignとBERTのモデルは自動的にダウンロードされるけど、awesome-alignの微調整された「model_with_co」と「model_without_co」モデルは[そのreadme](https://github.com/neulab/awesome-align?tab=readme-ov-file#model-performance)のGoogle Driveリンクから自分でダウンロードして、リポジトリのルートにある「models」というフォルダに抽出する必要がある。 
 
 ## Related academic papers　関連学術論文
